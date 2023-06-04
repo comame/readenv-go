@@ -26,3 +26,22 @@ func ExampleRead() {
 	// BAR
 	// 1
 }
+
+func ExampleRead_optional() {
+	os.Setenv("FOO", "Foo")
+
+	type Env struct {
+		Foo string `env:"FOO"`
+		Bar string `env:"BAR,optional"`
+	}
+
+	var env Env
+	readenv.Read(&env)
+
+	fmt.Println(env.Foo)
+	fmt.Println(env.Bar)
+
+	// Output:
+	// Foo
+	//
+}

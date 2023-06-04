@@ -3,6 +3,7 @@ package readenv
 import (
 	"os"
 	"reflect"
+	"strings"
 )
 
 func Read(s interface{}) {
@@ -24,16 +25,53 @@ func Read(s interface{}) {
 			panic("Every field type must be string")
 		}
 
-		envname := fieldType.Tag.Get("env")
-		if envname == "" {
-			panic("Environment variable name should not be empty")
-		}
+		tag := parseTag(fieldType.Tag.Get("env"))
 
-		env, ok := os.LookupEnv(envname)
-		if !ok {
-			panic("Environment variable `" + envname + "` is not found")
+		env, ok := os.LookupEnv(tag.envname)
+		if !ok && tag.opt != option(optional) {
+			panic("Environment variable `" + tag.envname + "` is not found")
 		}
 
 		fieldValue.Set(reflect.ValueOf(env))
+	}
+}
+
+type option int
+
+const (
+	none int = iota
+	optional
+)
+
+type tag struct {
+	envname string
+	opt     option
+}
+
+func parseTag(t string) tag {
+	s := strings.Split(t, ",")
+
+	if !(len(s) == 1 || len(s) == 2) {
+		panic("env tag `" + t + "` is invalid form")
+	}
+
+	envname := s[0]
+	opt := option(none)
+
+	if len(s) == 2 {
+		switch s[1] {
+		case "optional":
+			opt = option(optional)
+		}
+	}
+
+	envname = strings.TrimSpace(envname)
+	if envname == "" {
+		panic("envname must not be empty string")
+	}
+
+	return tag{
+		envname: envname,
+		opt:     opt,
 	}
 }
